@@ -1,0 +1,9 @@
+<!doctype html>
+<!-- Synthetic local UI only: inline code, no external resources or outbound navigation. -->
+<html lang="en"><head><meta charset="utf-8"><title>Controlled lifecycle fixture</title>
+<link rel="icon" href="data:,"></head>
+<body><h1>Controlled lifecycle fixture</h1><button id="update" type="button">Update state</button>
+<p id="state" role="status">Ready</p>
+<script>document.getElementById('update').addEventListener('click', () => {
+  document.getElementById('state').textContent = 'Updated';
+});</script></body></html>

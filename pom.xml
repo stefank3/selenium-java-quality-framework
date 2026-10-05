@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Test-only reference framework. Only the explicit live profile selects external UI tests. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.stefank3</groupId>
+  <artifactId>selenium-java-quality-framework</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <name>Selenium Java Quality Framework</name>
+  <description>Test-focused Java/Selenium portfolio reference implementation</description>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.release>21</maven.compiler.release>
+    <test.lane>deterministic</test.lane>
+    <live.profile.active>false</live.profile.active>
+    <live.enabled>false</live.enabled>
+    <base.url></base.url>
+    <browser>chrome</browser>
+    <headless>true</headless>
+    <test.jvm.args></test.jvm.args>
+  </properties>
+  <dependencies>
+    <dependency><groupId>org.seleniumhq.selenium</groupId><artifactId>selenium-java</artifactId><version>4.49.0</version><scope>test</scope></dependency>
+    <dependency><groupId>org.testng</groupId><artifactId>testng</artifactId><version>7.12.0</version><scope>test</scope></dependency>
+    <dependency><groupId>io.qameta.allure</groupId><artifactId>allure-testng</artifactId><version>3.0.0</version><scope>test</scope></dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-clean-plugin</artifactId><version>3.5.0</version></plugin>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>3.5.0</version></plugin>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.16.0</version></plugin>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><version>3.5.1</version><configuration><skipIfEmpty>true</skipIfEmpty></configuration></plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>3.6.3</version>
+        <executions><execution><id>toolchain</id><goals><goal>enforce</goal></goals><configuration><rules>
+          <requireJavaVersion><version>[21,22)</version></requireJavaVersion>
+          <requireMavenVersion><version>[3.10.0]</version></requireMavenVersion>
+        </rules></configuration></execution></executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.5.5</version>
+        <configuration>
+          <!-- Explicit suites, a single fork, and no retries keep live volume bounded. -->
+          <suiteXmlFiles><suiteXmlFile>src/test/resources/testng-deterministic.xml</suiteXmlFile></suiteXmlFiles>
+          <forkCount>1</forkCount><reuseForks>true</reuseForks><failIfNoTests>true</failIfNoTests>
+          <argLine>${test.jvm.args}</argLine>
+          <rerunFailingTestsCount>0</rerunFailingTestsCount>
+          <forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+          <reportsDirectory>${project.build.directory}/surefire-reports/${test.lane}</reportsDirectory>
+          <systemPropertyVariables>
+            <test.lane>${test.lane}</test.lane><live.profile.active>${live.profile.active}</live.profile.active>
+            <live.enabled>${live.enabled}</live.enabled><base.url>${base.url}</base.url>
+            <browser>${browser}</browser><headless>${headless}</headless>
+            <allure.results.directory>${project.build.directory}/allure-results/${test.lane}</allure.results.directory>
+          </systemPropertyVariables>
+          <environmentVariables>
+            <SE_AVOID_STATS>true</SE_AVOID_STATS><SE_AVOID_BROWSER_DOWNLOAD>true</SE_AVOID_BROWSER_DOWNLOAD>
+            <SE_SKIP_DRIVER_IN_PATH>true</SE_SKIP_DRIVER_IN_PATH><SE_TIMEOUT>60</SE_TIMEOUT>
+          </environmentVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId><artifactId>spotless-maven-plugin</artifactId><version>3.10.3</version>
+        <configuration><java><googleJavaFormat><version>1.36.1</version></googleJavaFormat></java></configuration>
+        <!-- Check, never silently rewrite source, in the canonical quality gate. -->
+        <executions><execution><id>java-format</id><phase>verify</phase><goals><goal>check</goal></goals></execution></executions>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <!-- Windows packaged process hosts can break JDK sockets in the virtualized temp directory.
+         Keep test-JVM socket scratch files in build output; no machine settings are changed. -->
+    <profile>
+      <id>windows-local-ipc</id>
+      <activation><os><family>Windows</family></os></activation>
+      <properties><test.jvm.args>-Djdk.net.unixdomain.tmpdir=target</test.jvm.args></properties>
+    </profile>
+    <profile>
+      <id>live</id>
+      <properties><test.lane>live</test.lane><live.profile.active>true</live.profile.active></properties>
+      <build><plugins>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId>
+          <executions><execution><id>live-opt-in</id><goals><goal>enforce</goal></goals><configuration><rules>
+            <requireProperty><property>live.enabled</property><regex>true</regex><message>Live execution requires -Dlive.enabled=true and the approved origin.</message></requireProperty>
+          </rules></configuration></execution></executions>
+        </plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId>
+          <configuration><suiteXmlFiles combine.self="override"><suiteXmlFile>src/test/resources/testng-live.xml</suiteXmlFile></suiteXmlFiles></configuration>
+        </plugin>
+      </plugins></build>
+    </profile>
+  </profiles>
+</project>

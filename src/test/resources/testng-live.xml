@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!-- Manual opt-in only. Each method and data row receives its own browser session. -->
+<suite name="Authorized live validation" parallel="none" thread-count="1" data-provider-thread-count="1">
+  <parameter name="lane" value="live"/>
+  <listeners><listener class-name="com.stefank3.quality.reporting.FailureEvidenceListener"/></listeners>
+  <test name="Automation Exercise catalogue and cart">
+    <classes>
+      <class name="com.stefank3.quality.tests.live.ProductCatalogueTest"/>
+      <class name="com.stefank3.quality.tests.live.CartTest"/>
+    </classes>
+  </test>
+</suite>

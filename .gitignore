@@ -1,0 +1,8 @@
+# IDE metadata is local and regenerable.
+.idea/
+*.iml
+# Build output includes Allure attachments, reports, and temporary verification probes.
+target/
+allure-results/
+allure-report/
+*.log

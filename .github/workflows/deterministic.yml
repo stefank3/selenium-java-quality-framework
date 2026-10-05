@@ -1,0 +1,41 @@
+name: Deterministic validation
+on:
+  pull_request:
+  push:
+    branches: [main]
+# Fork pull requests need no repository secrets or write token.
+permissions:
+  contents: read
+jobs:
+  deterministic-validation:
+    name: deterministic-validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      # Runner Chrome is installed; Selenium Manager chooses its matching driver.
+      - name: Verify runtime
+        run: |
+          chmod +x mvnw
+          ./mvnw --version
+          google-chrome --version
+      - name: Validate framework and controlled UI
+        run: ./mvnw -B -ntp clean verify
+      - name: Preserve deterministic evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: deterministic-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            target/allure-results/deterministic/
+            target/surefire-reports/deterministic/
+            target/diagnostics/deterministic/
