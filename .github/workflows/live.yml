@@ -1,0 +1,61 @@
+name: Manual live validation
+on:
+  workflow_dispatch:
+    inputs:
+      authorize_live:
+        description: Authorize five sequential catalogue/cart invocations against Automation Exercise
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+# Prevent simultaneous manual runs from multiplying traffic to the shared public site.
+concurrency:
+  group: automation-exercise-live
+  cancel-in-progress: false
+jobs:
+  live-validation:
+    if: ${{ inputs.authorize_live == true }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Verify runtime
+        run: |
+          chmod +x mvnw
+          ./mvnw --version
+          google-chrome --version
+      # Fixed arguments: inputs cannot inject a URL, test selector, or shell expression.
+      - name: Validate deterministic prerequisite
+        run: ./mvnw -B -ntp clean verify
+      - name: Run explicitly authorized live suite
+        run: ./mvnw -B -ntp -Plive -Dlive.enabled=true -Dbase.url=https://automationexercise.com verify
+      - name: Preserve prerequisite evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: live-prerequisite-deterministic-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            target/allure-results/deterministic/
+            target/surefire-reports/deterministic/
+            target/diagnostics/deterministic/
+      - name: Preserve live evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: live-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            target/allure-results/live/
+            target/surefire-reports/live/
+            target/diagnostics/live/

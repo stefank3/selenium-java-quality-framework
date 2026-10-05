@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!-- Explicit allowlist: required validation never selects live test classes. -->
+<suite name="Deterministic validation" parallel="none" thread-count="1" data-provider-thread-count="1">
+  <parameter name="lane" value="deterministic"/>
+  <listeners><listener class-name="com.stefank3.quality.reporting.FailureEvidenceListener"/></listeners>
+  <test name="Framework and controlled Chrome">
+    <classes>
+      <class name="com.stefank3.quality.tests.deterministic.TestConfigTest"/>
+      <class name="com.stefank3.quality.tests.deterministic.DriverFactoryTest"/>
+      <class name="com.stefank3.quality.tests.deterministic.DriverLifecycleTest"/>
+      <class name="com.stefank3.quality.tests.deterministic.FailureEvidenceListenerTest"/>
+      <class name="com.stefank3.quality.tests.deterministic.LocalChromeTest"/>
+    </classes>
+  </test>
+</suite>
